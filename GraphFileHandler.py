@@ -1,57 +1,66 @@
 from dataclasses import dataclass
 from Graph import Graph
-import tqdm
-import gc
+from Graph import Node
+from gc import collect
+
 
 @dataclass
 class LandMark:
     lon: float
     lat: float
-   
+
+
 class GraphFileHandler:
-
     @staticmethod
-    def read_landmarks(file_path: str) -> list[int]:
-        landmarks = []
-        with open(file_path, 'r', encoding='UTF-8') as file:
-            file.readline()
-            while line := file.readline():
-                values = line.split()
-                landmarks.append(LandMark(float(values[2]), float(values[1])))
-        return landmarks
-
-    @staticmethod
-    def make_csv(predecessors: list[int], landmarks: list[LandMark]) -> None:
+    def make_csv(predecessors: list[Node]) -> None:
         with open("out.csv", "w", encoding="UTF-8") as file:
             file.write("value,lon,lat\n")
             for predecessor in predecessors:
-                landmark = landmarks[predecessor]
-                file.write(f"{predecessor},{landmark.lon},{landmark.lat}\n")
+                file.write(f"{predecessor.value},{predecessor.lon},{predecessor.lat}\n")
 
     @staticmethod
-    def load_from_file(file_path: str) -> Graph:
-        print("parsing file...")
-        with open(file_path, "r", encoding="UTF-8") as file:
-            args = file.readline()
+    def graph_from_files(file_path_edges: str, file_path_nodes: str) -> Graph:
+        with open(file_path_edges, "r", encoding="UTF-8") as file_edges, open(
+            file_path_nodes, "r", encoding="UTF-8"
+        ) as file_nodes:
+            file_edges.readline()
+            args = file_nodes.readline()
             args = args.split()
-            graph = Graph(7509994, None)
-            while line := file.readline():
+            graph = Graph(int(args[0]), None)
+            while line := file_edges.readline():
                 values = line.split()
-                graph.add(int(values[0]), int(values[1]), int(values[2]))
-            return graph
+                graph.add(int(values[0]), int(values[1]), int(values[2]), None, None)
 
+            while line := file_nodes.readline():
+                values = line.split()
+                node = int(values[0])
+                if graph.graph[node] is None:
+                    continue
+                graph.graph[node].lat = float(values[1])
+                graph.graph[node].lon = float(values[2])
+
+            return graph
 
     @staticmethod
     def pre_process_graph(graph: Graph, landmarks: list[int]) -> None:
         distances = graph.dijkstra_all_nodes_from_landmarks(landmarks)
         GraphFileHandler._write_pre_process("preprocess.alt.to", distances)
         del distances
-        gc.collect()
+        collect()
         graph = graph.reverse()
         distances = graph.dijkstra_all_nodes_from_landmarks(landmarks)
         GraphFileHandler._write_pre_process("preprocess.alt.from", distances)
-    
-        
+
+    @staticmethod
+    def read_pre_process(file_path: str):
+        data = []
+        with open(file_path, "r", encoding="UTF-8") as f:
+            while line := f.readline():
+                values = line.split()
+                values = [int(x) for x in values]
+                data.append(values[1:])
+        return data
+
     @staticmethod
     def _write_pre_process(file_path: str, pre_process: list[list[int]]) -> None:
         with open(file_path, "w", encoding="UTF-8") as file:
@@ -60,5 +69,3 @@ class GraphFileHandler:
                 for data in entry:
                     file.write(f"{data} ")
                 file.write("\n")
-
-                

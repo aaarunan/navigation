@@ -1,8 +1,10 @@
 class PriorityQueue:
 
-    distances = []
-    length = 0
-    indexes = []
+
+    def __init__(self) -> None:
+        self.distances = []
+        self.length = 0
+        self.indexes = []
 
     def swap(self, i, j):
         self.distances[i], self.distances[j] = self.distances[j], self.distances[i]
