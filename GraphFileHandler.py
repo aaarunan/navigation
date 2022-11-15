@@ -3,7 +3,7 @@ from Graph import Graph
 from Graph import Node
 from gc import collect
 import sys
-import multiprocessing
+import threading
 
 
 @dataclass
@@ -56,11 +56,11 @@ class GraphFileHandler:
         #landmark = 0
         #GraphFileHandler.pre_process_graph(graph, [landmark], dir + f"/preprocess.alt.to.{landmark}")
         for index, landmark in enumerate(landmarks):
-            multiprocessing.Process(target=GraphFileHandler.pre_process_graph_multithreaded, args=(graph, index, landmark, dir + "/preprocess.alt.to")).start()
+            threading.Thread(target=GraphFileHandler.pre_process_graph_multithreaded, args=(graph, index, landmark, dir + "/preprocess.alt.to")).start()
 
         graph = graph.reverse()
         for index, landmark in enumerate(landmarks):
-            multiprocessing.Process(target=GraphFileHandler.pre_process_graph_multithreaded, args=(graph, index, landmark, dir + "/preprocess.alt.from")).start()
+            threading.Thread(target=GraphFileHandler.pre_process_graph_multithreaded, args=(graph, index, landmark, dir + "/preprocess.alt.from")).start()
 
 
     @staticmethod
