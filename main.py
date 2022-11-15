@@ -119,6 +119,7 @@ def main():
     ##### island ######
 
     #preprocess_island_multithreaded()
+    #preprocess_island()
 
     #init_island()
     #find_path_alt_island()
