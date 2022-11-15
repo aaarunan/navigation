@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from Graph import Graph
 from Graph import Node
 from gc import collect
+import threading
 
 
 @dataclass
@@ -43,12 +44,14 @@ class GraphFileHandler:
 
     @staticmethod
     def pre_process_graph(graph: Graph, landmarks: list[int]) -> None:
-        distances = graph.dijkstra_all_nodes_from_landmarks(landmarks)
+        distances = graph.dijkstra_from_nodes(landmarks)
         GraphFileHandler._write_pre_process("preprocess.alt.to", distances)
         del distances
         collect()
+        #Do this in another thread 
+        #reverse_thread = threading.Thread()
         graph = graph.reverse()
-        distances = graph.dijkstra_all_nodes_from_landmarks(landmarks)
+        distances = graph.dijkstra_from_nodes(landmarks)
         GraphFileHandler._write_pre_process("preprocess.alt.from", distances)
 
     @staticmethod

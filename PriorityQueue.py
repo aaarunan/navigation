@@ -1,6 +1,4 @@
 class PriorityQueue:
-
-
     def __init__(self) -> None:
         self.distances = []
         self.length = 0

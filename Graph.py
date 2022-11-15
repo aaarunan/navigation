@@ -42,6 +42,15 @@ class Graph:
             return
         self.graph[start] = Node(start, [Edge(start, end, weight)], lon, lat)
 
+    def reverse(self):
+        reverse = Graph(self.nodes, [])
+        for node in self.graph:
+            if node is None:
+                continue
+            for edge in node.edges:
+                reverse.add(edge.end, edge.start, edge.weight, None, None)
+        return reverse
+
     def dijikstras(self, start: int, stop: int = None, only_distances: bool = False):
         distances = [[None, float("inf")]] * self.nodes
         distances[start] = ["start", 0]
@@ -87,7 +96,7 @@ class Graph:
             return distances
         if only_distances:
             return distances[stop][1]
-        return self.get_predecessors(distances, stop)
+        return self.get_predecessors(distances, start, stop)
 
     def alt(
         self,
@@ -95,64 +104,73 @@ class Graph:
         stop: int,
         preprocess_from: list[list[int]],
         preprocess_to: list[list[int]],
+        silent: bool = False,
     ):
-        distances = [[None, float("inf")]] * self.nodes
-        distances[start] = ["start", 0]
         queue = PriorityQueue()
-        estimated_end = self.estimate_distance(preprocess_from, preprocess_to, start, stop)
+        estimated_end = self.estimate_distance(
+            preprocess_from, preprocess_to, start, stop
+        )
         queue.insert(self.graph[start].value, estimated_end)
+        distances = {}
+        distances[start] = ["start", 0, estimated_end]
         nodes = 0
-        visited = [False] * self.nodes
-        # pbar = tqdm.tqdm(total=self.nodes)
-        # print("Finding paths...")
-        print("Finding path with alt...")
-        start = timer()
+        visited = set()
+        if not silent:
+            pbar = tqdm.tqdm(total=self.nodes)
+            print("Finding path with alt...")
+        start_time = timer()
         while queue.length != 0:
-            index, distance = queue.peek()
+            index, _ = queue.peek()
             current_node = self.graph[index]
             nodes += 1
 
-            if stop is not None and index == stop:
-                break
             if current_node is None:
                 continue
-            if visited[index]:
+            if index in visited:
                 continue
+            if index == stop:
+                if not silent:
+                    end = timer() - start_time
+                    print(f"done. ({end})")
+                    print(f"processed {nodes} nodes")
+                return self.get_predecessors(distances, start, stop)
 
-            # pbar.update(1)
-            visited[index] = True
-            distances[current_node.value][1] = distance
+            if not silent:
+                pbar.update(1)
+                visited.add(index)
 
             for edge in current_node.edges:
-                if visited[edge.end]:
+                if edge.end in visited:
                     continue
-                new_weight = distance + edge.weight
+                new_weight = distances[current_node.value][1] + edge.weight
+                if edge.end not in distances:
+                    distances[edge.end] = [None, float("inf"), None]
                 if new_weight < distances[edge.end][1]:
-                    estimated_end = self.estimate_distance(
-                        preprocess_from, preprocess_to, index, edge.end
-                    )
-
+                    estimated_end = distances[edge.end][2]
+                    if estimated_end is None:
+                        estimated_end = self.estimate_distance(
+                            preprocess_from, preprocess_to, edge.end, stop
+                        )
                     queue.insert(edge.end, new_weight + estimated_end)
-                    distances[edge.end] = [edge.start, new_weight]
-        end = timer() - start
-        print(f"done. ({end})")
-        print(f"processed {nodes} nodes")
+                    distances[edge.end] = [
+                        edge.start,
+                        new_weight,
+                        estimated_end,
+                    ]
 
-        if stop is None:
-            return distances
-        return self.get_predecessors(distances, stop)
+        return False
 
     def estimate_distance(
         self,
-        preprocess_from: list[list[int]],
-        preprocess_to: list[list[int]],
+        to_nodes: list[list[int]],
+        to_landmarks: list[list[int]],
         start: int,
         stop: int,
     ):
         max_difference = 0
-        for i in range(len(preprocess_from[0])):
-            to_node = preprocess_to[start][i] - preprocess_to[stop][i]
-            from_landmark = preprocess_from[stop][i] - preprocess_from[start][i]
+        for i in range(len(to_nodes[0])):
+            to_node = to_landmarks[start][i] - to_landmarks[stop][i]
+            from_landmark = to_nodes[stop][i] - to_nodes[start][i]
 
             if to_node > max_difference:
                 max_difference = to_node
@@ -162,12 +180,12 @@ class Graph:
 
         return max_difference
 
-    def dijkstra_all_nodes_from_landmarks(self, landmarks) -> list[list[int]]:
-        pre_process = [([None] * len(landmarks))[:] for _ in range(self.nodes)]
+    def dijkstra_from_nodes(self, nodes) -> list[list[int]]:
+        pre_process = [([None] * len(nodes))[:] for _ in range(self.nodes)]
 
-        pbar = tqdm.tqdm(total=self.nodes * len(landmarks))
+        pbar = tqdm.tqdm(total=self.nodes * len(nodes))
 
-        for i, landmark in enumerate(landmarks):
+        for i, landmark in enumerate(nodes):
             distances = self.dijikstras(landmark, only_distances=True)
             for j, distance in enumerate(distances):
                 temp = distance[1]
@@ -177,9 +195,10 @@ class Graph:
                 pre_process[j][i] = temp
         return pre_process
 
-    def get_predecessors(self, distances, end):
-        obj = distances[end]
-        predecessors = []
+    def get_predecessors(self, distances, start, stop):
+        obj = distances[stop]
+        print(start)
+        predecessors = [self.graph[start]]
 
         if obj[1] == float("inf"):
             return
@@ -193,19 +212,10 @@ class Graph:
 
         for predecessor in reversed(temp):
             predecessors.append(self.graph[predecessor])
-        predecessors.append(self.graph[end])
+        predecessors.append(self.graph[stop])
         temp = []
 
         return predecessors, obj[1]
-
-    def reverse(self):
-        reverse = Graph(self.nodes, [])
-        for node in self.graph:
-            if node is None:
-                continue
-            for edge in node.edges:
-                reverse.add(edge.end, edge.start, edge.weight, None, None)
-        return reverse
 
     def __repr__(self) -> str:
         return str(self.graph)
