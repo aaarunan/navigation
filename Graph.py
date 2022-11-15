@@ -51,7 +51,7 @@ class Graph:
                 reverse.add(edge.end, edge.start, edge.weight, None, None)
         return reverse
 
-    def dijikstras(self, start: int, stop: int = None, only_distances: bool = False):
+    def dijikstras(self, start: int, stop: int = None, silent: bool = False):
         distances = [[None, float("inf")]] * self.nodes
         distances[start] = ["start", 0]
         queue = PriorityQueue()
@@ -59,9 +59,8 @@ class Graph:
         nodes = 0
 
         visited = [False] * self.nodes
-        # pbar = tqdm.tqdm(total=self.nodes)
-        # print("Finding paths...")
-        if not only_distances:
+        if not silent:
+            pbar = tqdm.tqdm(total=self.nodes)
             print("Finding path with dijikstra...")
             start = timer()
         while queue.length != 0:
@@ -69,14 +68,19 @@ class Graph:
             index, distance = queue.peek()
             current_node = self.graph[index]
 
-            if stop is not None and index == stop:
-                break
-
+            if not silent:
+                pbar.update(1)
             if current_node is None:
                 continue
             if visited[index]:
                 continue
-            # pbar.update(1)
+            if index == stop:
+                if not silent:
+                    end = timer() - start
+                    print(f"done. ({end})")
+                    print(f"processed {nodes} nodes")
+                return self.get_predecessors(distances, start, stop)
+
             visited[index] = True
             distances[current_node.value][1] = distance
 
@@ -87,16 +91,7 @@ class Graph:
                 if new_weight < distances[edge.end][1]:
                     queue.insert(edge.end, new_weight)
                     distances[edge.end] = [edge.start, new_weight]
-        end = timer() - start
-        if not only_distances:
-            print(f"done. ({end})")
-            print(f"processed {nodes} nodes")
-
-        if stop is None:
-            return distances
-        if only_distances:
-            return distances[stop][1]
-        return self.get_predecessors(distances, start, stop)
+        return False
 
     def alt(
         self,
@@ -180,20 +175,41 @@ class Graph:
 
         return max_difference
 
-    def dijkstra_from_nodes(self, nodes) -> list[list[int]]:
-        pre_process = [([None] * len(nodes))[:] for _ in range(self.nodes)]
+    def dijikstra_from_node(self, node: int, silent: bool = False) -> list[list[int]]:
+        distances = [float("inf")] * self.nodes
+        distances[node] = 0
+        queue = PriorityQueue()
+        queue.insert(self.graph[node].value, 0)
+        nodes = 0
+        visited = [False] * self.nodes
 
-        pbar = tqdm.tqdm(total=self.nodes * len(nodes))
+        if not silent:
+            pbar = tqdm.tqdm(total=self.nodes)
+            print("Finding path with dijikstra...")
+        while queue.length != 0:
+            nodes += 1
+            index, distance = queue.peek()
+            current_node = self.graph[index]
 
-        for i, landmark in enumerate(nodes):
-            distances = self.dijikstras(landmark, only_distances=True)
-            for j, distance in enumerate(distances):
-                temp = distance[1]
+            if not silent:
                 pbar.update(1)
-                if distance[1] == float("inf"):
-                    temp = -1
-                pre_process[j][i] = temp
-        return pre_process
+            if current_node is None:
+                continue
+            if visited[index]:
+                continue
+
+            visited[index] = True
+            distances[current_node.value] = distance
+
+            for edge in current_node.edges:
+                if visited[edge.end]:
+                    continue
+                new_weight = distance + edge.weight
+                if new_weight < distances[edge.end]:
+                    queue.insert(edge.end, new_weight)
+                    distances[edge.end] = new_weight
+
+        return distances
 
     def get_predecessors(self, distances, start, stop):
         obj = distances[stop]

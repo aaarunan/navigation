@@ -5,8 +5,21 @@ PREPROCESS_TO = None
 PREPROCESS_FROM = None
 
 
-# GraphFileHandler.pre_process_graph(graph, [22864, 0, 109910])
-# GraphFileHandler.pre_process_graph(graph, [2151398, 1236417, 3225427])
+def preprocess_island():
+    global GRAPH
+
+    print("Loading graph")
+
+    GRAPH = GraphFileHandler.graph_from_files(
+        "files/island/data/kanter.txt", "files/island/data/noder.txt"
+    )
+    GraphFileHandler.pre_process(GRAPH, [22864, 0, 109910], "files/island/preprocess")
+
+
+def preprocess_europe():
+    GraphFileHandler.pre_process(
+        GRAPH, [2151398, 1236417, 3225427], "files/europa/preprocess"
+    )
 
 
 def find_path_island_test():
@@ -23,6 +36,7 @@ def find_path_alt_island():
 
     print("Writing result to file...")
     GraphFileHandler.make_csv(predecessors)
+
 
 def find_path_alt_europa():
     from_node = 6684812
@@ -45,11 +59,12 @@ def init_island():
 
     print("Loading preprocess files")
     PREPROCESS_FROM = GraphFileHandler.read_pre_process(
-        "files/island/preprocess/preprocess.alt.from"
+        "files/island/preprocess/preprocess.alt.from", 3
     )
     PREPROCESS_TO = GraphFileHandler.read_pre_process(
-        "files/island/preprocess/preprocess.alt.to"
+        "files/island/preprocess/preprocess.alt.to", 3
     )
+
 
 def init_europe():
     global GRAPH
@@ -63,16 +78,25 @@ def init_europe():
 
     print("Loading preprocess files")
     PREPROCESS_FROM = GraphFileHandler.read_pre_process(
-        "files/europa/preprocess/preprocess.alt.from"
+        "files/europa/preprocess/preprocess.alt.from", 2
     )
     PREPROCESS_TO = GraphFileHandler.read_pre_process(
-        "files/europa/preprocess/preprocess.alt.to"
+        "files/europa/preprocess/preprocess.alt.to", 2
     )
 
 
 def main():
-    init_europe()
-    find_path_alt_europa()
+    ##### europa #####
+
+    # init_europe()
+    # find_path_alt_europa()
+
+    ##### island ######
+
+    #preprocess_island()
+
+    init_island()
+    find_path_alt_island()
     print("exiting...")
 
 

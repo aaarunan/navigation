@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from Graph import Graph
 from Graph import Node
 from gc import collect
+import sys
 import threading
 
 
@@ -43,32 +44,39 @@ class GraphFileHandler:
             return graph
 
     @staticmethod
-    def pre_process_graph(graph: Graph, landmarks: list[int]) -> None:
-        distances = graph.dijkstra_from_nodes(landmarks)
-        GraphFileHandler._write_pre_process("preprocess.alt.to", distances)
+    def pre_process(graph: Graph, landmarks: list[int], dir: str) -> None:
+        GraphFileHandler.pre_process_graph(graph, landmarks, dir + "/preprocess.alt.to")
+
+        graph = graph.reverse()
+        GraphFileHandler.pre_process_graph(graph, landmarks, dir + "/preprocess.alt.from")
+    
+    @staticmethod
+    def pre_process_graph(graph: Graph, landmarks: list[int], file_name: str): 
+        for index, landmark in enumerate(landmarks):
+            distances = graph.dijikstra_from_node(landmark)
+            GraphFileHandler._write_pre_process(
+                f"{file_name}.{index}", distances
+            )
         del distances
         collect()
-        #Do this in another thread 
-        #reverse_thread = threading.Thread()
-        graph = graph.reverse()
-        distances = graph.dijkstra_from_nodes(landmarks)
-        GraphFileHandler._write_pre_process("preprocess.alt.from", distances)
 
     @staticmethod
-    def read_pre_process(file_path: str):
-        data = []
-        with open(file_path, "r", encoding="UTF-8") as f:
-            while line := f.readline():
-                values = line.split()
-                values = [int(x) for x in values]
-                data.append(values[1:])
-        return data
-
-    @staticmethod
-    def _write_pre_process(file_path: str, pre_process: list[list[int]]) -> None:
+    def _write_pre_process(file_path: str, distances: list[int]) -> None:
         with open(file_path, "w", encoding="UTF-8") as file:
-            for index, entry in enumerate(pre_process):
-                file.write(f"{index} ")
-                for data in entry:
-                    file.write(f"{data} ")
-                file.write("\n")
+            for index, distance in enumerate(distances):
+                if distance == float("inf"):
+                    distance = sys.maxsize
+                file.write(f"{index} {distance}\n")
+
+    @staticmethod
+    def read_pre_process(file_path: str, landmarks: int) -> list[list[int]]:
+        data = []
+        for i in range(landmarks):
+            with open(file_path + "." + str(i), "r", encoding="UTF-8") as f:
+                while line := f.readline():
+                    values = line.split()
+                    if i == 0:
+                        data.append([int(values[1])])
+                    else:
+                        data[int(values[0])].append(int(values[1]))
+        return data
