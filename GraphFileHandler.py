@@ -51,6 +51,19 @@ class GraphFileHandler:
         GraphFileHandler.pre_process_graph(graph, landmarks, dir + "/preprocess.alt.from")
     
     @staticmethod
+    def pre_process_multithreaded(graph: Graph, landmarks: list[int], dir: str) -> None:
+
+        #landmark = 0
+        #GraphFileHandler.pre_process_graph(graph, [landmark], dir + f"/preprocess.alt.to.{landmark}")
+        for index, landmark in enumerate(landmarks):
+            threading.Thread(target=GraphFileHandler.pre_process_graph_multithreaded, args=(graph, index, landmark, dir + "/preprocess.alt.to")).start()
+
+        graph = graph.reverse()
+        for index, landmark in enumerate(landmarks):
+            threading.Thread(target=GraphFileHandler.pre_process_graph_multithreaded, args=(graph, index, landmark, dir + "/preprocess.alt.from")).start()
+
+
+    @staticmethod
     def pre_process_graph(graph: Graph, landmarks: list[int], file_name: str): 
         for index, landmark in enumerate(landmarks):
             distances = graph.dijikstra_from_node(landmark)
@@ -59,6 +72,13 @@ class GraphFileHandler:
             )
         del distances
         collect()
+
+    @staticmethod
+    def pre_process_graph_multithreaded(graph: Graph, index:int ,landmark: int, file_name: str): 
+            distances = graph.dijikstra_from_node(landmark)
+            GraphFileHandler._write_pre_process(
+                f"{file_name}.{index}", distances
+            )
 
     @staticmethod
     def _write_pre_process(file_path: str, distances: list[int]) -> None:
