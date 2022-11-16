@@ -4,6 +4,7 @@ GRAPH = None
 PREPROCESS_TO = None
 PREPROCESS_FROM = None
 
+europa_nodes = [4248761, 6600989, 238502]
 
 def preprocess_island():
     global GRAPH
@@ -31,7 +32,7 @@ def preprocess_europe():
         "files/europa/data/kanter.txt", "files/europa/data/noder.txt"
     )
     GraphFileHandler.pre_process(
-        GRAPH, [2151398, 1236417, 3225427], "files/europa/preprocess"
+        GRAPH, europa_nodes, "files/europa/preprocess"
     )
 
 def preprocess_europe_multithreaded():
@@ -41,7 +42,7 @@ def preprocess_europe_multithreaded():
         "files/europa/data/kanter.txt", "files/europa/data/noder.txt"
     )
     GraphFileHandler.pre_process_multithreaded(
-        GRAPH, [2151398, 1236417, 3225427], "files/europa/preprocess"
+        GRAPH, europa_nodes, "files/europa/preprocess"
     )
 
 def find_path_island_test():
@@ -61,8 +62,8 @@ def find_path_alt_island():
 
 
 def find_path_alt_europa():
-    from_node = 6684812
-    to_node = 3430400
+    from_node = 5585863
+    to_node = 2720989
     predecessors, _ = GRAPH.alt(from_node, to_node, PREPROCESS_FROM, PREPROCESS_TO)
 
     print("Writing result to file...")
@@ -108,13 +109,13 @@ def init_europe():
 
 
 def main():
-    print("Loading graph")
     ##### europa #####
 
-    preprocess_europe_multithreaded()
+    #preprocess_europe_multithreaded()
+    #preprocess_europe()
 
-    # init_europe()
-    # find_path_alt_europa()
+    init_europe()
+    #find_path_alt_europa()
 
     ##### island ######
 
@@ -122,7 +123,8 @@ def main():
     #preprocess_island()
 
     #init_island()
-    #find_path_alt_island()
+    find_path_alt_island()
+    #find_path_island_test()
 
     print("exiting...")
 

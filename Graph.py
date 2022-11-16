@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-import tqdm
-from PriorityQueue import PriorityQueue
+from tqdm import tqdm
 from timeit import default_timer as timer
+from queue import PriorityQueue as PriorityQueue
 
 
 @dataclass
@@ -52,20 +52,60 @@ class Graph:
         return reverse
 
     def dijikstras(self, start: int, stop: int = None, silent: bool = False):
-        distances = [[None, float("inf")]] * self.nodes
+        distances = {}
         distances[start] = ["start", 0]
         queue = PriorityQueue()
-        queue.insert(self.graph[start].value, 0)
+        queue.put((0, self.graph[start].value))
+        visited = set()
         nodes = 0
 
-        visited = [False] * self.nodes
         if not silent:
-            pbar = tqdm.tqdm(total=self.nodes)
             print("Finding path with dijikstra...")
-            start = timer()
-        while queue.length != 0:
+            start_timer = timer()
+        while not queue.empty():
             nodes += 1
-            index, distance = queue.peek()
+            distance, index = queue.get()
+            current_node = self.graph[index]
+
+            if current_node is None:
+                continue
+            if index in visited:
+                continue
+            if index == stop:
+                if not silent:
+                    end = timer() - start_timer
+                    print(f"done. ({end})")
+                    print(f"processed {nodes} nodes")
+                return self.get_predecessors(distances, start, stop)
+
+            visited.add(index)
+            distances[current_node.value][1] = distance
+
+            for edge in current_node.edges:
+                if edge.end in visited:
+                    continue
+                if edge.end not in distances:
+                    distances[edge.end] = [None, float("inf")]
+                new_weight = distance + edge.weight
+                if new_weight < distances[edge.end][1]:
+                    queue.put((new_weight, edge.end))
+                    distances[edge.end] = [edge.start, new_weight]
+        return False
+
+    def dijikstra_from_node(self, node: int, silent: bool = False) -> list[list[int]]:
+        distances = [float("inf")] * self.nodes
+        distances[node] = 0
+        queue = PriorityQueue()
+        queue.put((0, self.graph[node].value))
+        nodes = 0
+        visited = [False] * self.nodes
+
+        if not silent:
+            pbar = tqdm(total=self.nodes)
+            print("Finding path with dijikstra...")
+        while not queue.empty():
+            nodes += 1
+            distance, index = queue.get()
             current_node = self.graph[index]
 
             if not silent:
@@ -74,24 +114,19 @@ class Graph:
                 continue
             if visited[index]:
                 continue
-            if index == stop:
-                if not silent:
-                    end = timer() - start
-                    print(f"done. ({end})")
-                    print(f"processed {nodes} nodes")
-                return self.get_predecessors(distances, start, stop)
 
             visited[index] = True
-            distances[current_node.value][1] = distance
+            distances[current_node.value] = distance
 
             for edge in current_node.edges:
                 if visited[edge.end]:
                     continue
                 new_weight = distance + edge.weight
-                if new_weight < distances[edge.end][1]:
-                    queue.insert(edge.end, new_weight)
-                    distances[edge.end] = [edge.start, new_weight]
-        return False
+                if new_weight < distances[edge.end]:
+                    queue.put((new_weight, edge.end))
+                    distances[edge.end] = new_weight
+
+        return distances
 
     def alt(
         self,
@@ -101,21 +136,21 @@ class Graph:
         preprocess_to: list[list[int]],
         silent: bool = False,
     ):
-        queue = PriorityQueue()
         estimated_end = self.estimate_distance(
             preprocess_from, preprocess_to, start, stop
         )
-        queue.insert(self.graph[start].value, estimated_end)
+        queue = PriorityQueue()
+        queue.put((estimated_end, self.graph[start].value))
         distances = {}
         distances[start] = ["start", 0, estimated_end]
-        nodes = 0
         visited = set()
+        nodes = 0
+
         if not silent:
-            pbar = tqdm.tqdm(total=self.nodes)
             print("Finding path with alt...")
-        start_time = timer()
-        while queue.length != 0:
-            index, _ = queue.peek()
+            start_time = timer()
+        while not queue.empty():
+            _, index = queue.get()
             current_node = self.graph[index]
             nodes += 1
 
@@ -127,12 +162,12 @@ class Graph:
                 if not silent:
                     end = timer() - start_time
                     print(f"done. ({end})")
-                    print(f"processed {nodes} nodes")
+                    print(f"processed      {nodes} nodes")
+                    print(f"distance       {distances[stop][1]/100/60/60} timer")
+                    print(f"Nodes in path: {len(distances)}")
                 return self.get_predecessors(distances, start, stop)
 
-            if not silent:
-                pbar.update(1)
-                visited.add(index)
+            visited.add(index)
 
             for edge in current_node.edges:
                 if edge.end in visited:
@@ -146,7 +181,7 @@ class Graph:
                         estimated_end = self.estimate_distance(
                             preprocess_from, preprocess_to, edge.end, stop
                         )
-                    queue.insert(edge.end, new_weight + estimated_end)
+                    queue.put((new_weight + estimated_end, edge.end))
                     distances[edge.end] = [
                         edge.start,
                         new_weight,
@@ -175,51 +210,14 @@ class Graph:
 
         return max_difference
 
-    def dijikstra_from_node(self, node: int, silent: bool = False) -> list[list[int]]:
-        distances = [float("inf")] * self.nodes
-        distances[node] = 0
-        queue = PriorityQueue()
-        queue.insert(self.graph[node].value, 0)
-        nodes = 0
-        visited = [False] * self.nodes
-
-        if not silent:
-            pbar = tqdm.tqdm(total=self.nodes)
-            print("Finding path with dijikstra...")
-        while queue.length != 0:
-            nodes += 1
-            index, distance = queue.peek()
-            current_node = self.graph[index]
-
-            if not silent:
-                pbar.update(1)
-            if current_node is None:
-                continue
-            if visited[index]:
-                continue
-
-            visited[index] = True
-            distances[current_node.value] = distance
-
-            for edge in current_node.edges:
-                if visited[edge.end]:
-                    continue
-                new_weight = distance + edge.weight
-                if new_weight < distances[edge.end]:
-                    queue.insert(edge.end, new_weight)
-                    distances[edge.end] = new_weight
-
-        return distances
-
     def get_predecessors(self, distances, start, stop):
-        obj = distances[stop]
-        print(start)
+        current = distances[stop]
         predecessors = [self.graph[start]]
 
-        if obj[1] == float("inf"):
+        if current[1] == float("inf"):
             return
 
-        predecessor = obj[0]
+        predecessor = current[0]
         temp = []
 
         while predecessor != "start":
@@ -231,7 +229,7 @@ class Graph:
         predecessors.append(self.graph[stop])
         temp = []
 
-        return predecessors, obj[1]
+        return predecessors, current[1]
 
     def __repr__(self) -> str:
         return str(self.graph)
