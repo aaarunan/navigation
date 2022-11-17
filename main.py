@@ -4,11 +4,9 @@ GRAPH = None
 PREPROCESS_TO = None
 PREPROCESS_FROM = None
 
-europa_nodes = [4248761, 6600989, 238502]
 
 def preprocess_island():
     global GRAPH
-
 
     GRAPH = GraphFileHandler.graph_from_files(
         "files/island/data/kanter.txt", "files/island/data/noder.txt"
@@ -22,28 +20,32 @@ def preprocess_island_multithreaded():
     GRAPH = GraphFileHandler.graph_from_files(
         "files/island/data/kanter.txt", "files/island/data/noder.txt"
     )
-    GraphFileHandler.pre_process_multithreaded(GRAPH, [22864, 0, 109910], "files/island/preprocess")
+    GraphFileHandler.pre_process_multithreaded(
+        GRAPH, [22864, 0, 109910], "files/island/preprocess"
+    )
 
 
 def preprocess_europe():
     global GRAPH
-    
+
     GRAPH = GraphFileHandler.graph_from_files(
         "files/europa/data/kanter.txt", "files/europa/data/noder.txt"
     )
     GraphFileHandler.pre_process(
-        GRAPH, europa_nodes, "files/europa/preprocess"
+        GRAPH, [2151398, 1236417, 3225427], "files/europa/preprocess"
     )
+
 
 def preprocess_europe_multithreaded():
     global GRAPH
-    
+
     GRAPH = GraphFileHandler.graph_from_files(
         "files/europa/data/kanter.txt", "files/europa/data/noder.txt"
     )
     GraphFileHandler.pre_process_multithreaded(
-        GRAPH, europa_nodes, "files/europa/preprocess"
+        GRAPH, [2151398, 1236417, 3225427], "files/europa/preprocess"
     )
+
 
 def find_path_island_test():
     from_node = 66617
@@ -62,9 +64,11 @@ def find_path_alt_island():
 
 
 def find_path_alt_europa():
-    from_node = 5585863
-    to_node = 2720989
-    predecessors, _ = GRAPH.alt(from_node, to_node, PREPROCESS_FROM, PREPROCESS_TO)
+    from_node = 4247796
+    to_node =  232073
+    predecessors, _ = GRAPH.alt(from_node, to_node, PREPROCESS_TO, PREPROCESS_FROM)
+    predecessors, _ = GRAPH.dijikstras(from_node, to_node)
+
 
     print("Writing result to file...")
     GraphFileHandler.make_csv(predecessors)
@@ -101,30 +105,75 @@ def init_europe():
 
     print("Loading preprocess files")
     PREPROCESS_FROM = GraphFileHandler.read_pre_process(
-        "files/europa/preprocess/preprocess.alt.from", 2
+        "files/europa/preprocess/preprocess.alt.from", 3
     )
     PREPROCESS_TO = GraphFileHandler.read_pre_process(
-        "files/europa/preprocess/preprocess.alt.to", 2
+        "files/europa/preprocess/preprocess.alt.to", 3
     )
 
+def main_patfinding():
+    loop = True
+    while(loop):
+        try:
+            start = int(input("start:"))
+            stop = int(input("stop:"))
+        except TypeError:
+            print("Not a number.")
+            main_patfinding()
+        predecessors, _ = GRAPH.alt(start, stop, PREPROCESS_TO, PREPROCESS_FROM)
+        GRAPH.dijikstras(start, stop)
+
+        print("Writing result to file...")
+        GraphFileHandler.make_csv(predecessors)
+        option = input("Continue with other nodes? [Y/n] ")
+        if option == "n":
+            loop = False
+
+
+
+def main_island():
+    pass
 
 def main():
+    print("1. europe")
+    print("2. iceland")
+    print("3. pre process europe")
+    print("4. pre process iceland")
+    try:
+        option = int(input("Choose and option: "))
+    except TypeError:
+        print("Not a number.")
+        main()
+
+    match(option):
+        case 1:
+            init_europe()
+        case 2:
+            init_island()
+        case 3:
+            preprocess_europe()
+        case 4:
+            preprocess_island()
+        case _:
+            print("Not a valid option.")
+            main()
+    main_patfinding()
+
     ##### europa #####
 
     #preprocess_europe_multithreaded()
     #preprocess_europe()
 
-    init_europe()
+    #init_europe()
     #find_path_alt_europa()
 
     ##### island ######
 
-    #preprocess_island_multithreaded()
+    # preprocess_island_multithreaded()
     #preprocess_island()
 
     #init_island()
-    find_path_alt_island()
-    #find_path_island_test()
+    #find_path_alt_island()
 
     print("exiting...")
 

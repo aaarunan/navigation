@@ -72,12 +72,14 @@ class Graph:
             if index in visited:
                 continue
             if index == stop:
+                pred = self.get_predecessors(distances, start, stop)
                 if not silent:
                     end = timer() - start_timer
                     print(f"done. ({end})")
                     print(f"processed {nodes} nodes")
-                return self.get_predecessors(distances, start, stop)
-
+                    print(f"distance       {distances[stop][1]/100/60/60} timer")
+                    print(f"Nodes in path: {len(pred[0])}")
+                return pred
             visited.add(index)
             distances[current_node.value][1] = distance
 
@@ -159,13 +161,14 @@ class Graph:
             if index in visited:
                 continue
             if index == stop:
+                pred = self.get_predecessors(distances, start, stop)
                 if not silent:
                     end = timer() - start_time
                     print(f"done. ({end})")
                     print(f"processed      {nodes} nodes")
                     print(f"distance       {distances[stop][1]/100/60/60} timer")
-                    print(f"Nodes in path: {len(distances)}")
-                return self.get_predecessors(distances, start, stop)
+                    print(f"Nodes in path: {len(pred[0])}")
+                return pred
 
             visited.add(index)
 
@@ -212,7 +215,7 @@ class Graph:
 
     def get_predecessors(self, distances, start, stop):
         current = distances[stop]
-        predecessors = [self.graph[start]]
+        predecessors = []
 
         if current[1] == float("inf"):
             return

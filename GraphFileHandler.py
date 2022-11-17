@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from Graph import Graph
 from Graph import Node
-from gc import collect
+import gc
 import sys
 import threading
 from tqdm import tqdm
@@ -23,40 +23,43 @@ class GraphFileHandler:
 
     @staticmethod
     def graph_from_files(file_path_edges: str, file_path_nodes: str) -> Graph:
+        #Improve performace by disabling garbage collection
+        #This is due to append being slow when appending objects
+        gc.disable()
         with open(file_path_nodes, "r", encoding="UTF-8") as file_nodes:
             args = file_nodes.readline()
             args = args.split()
             graph = Graph(int(args[0]), None)
 
         with open(file_path_edges, "r", encoding="UTF-8") as file_edges:
-            pbar = tqdm(total=int(file_edges.readline()))
-
-            while line := file_edges.readline():
-                pbar.update(1)
+            file_edges.readline()
+            for line in tqdm(file_edges):
                 values = line.split()
                 graph.add(int(values[0]), int(values[1]), int(values[2]), None, None)
 
         with open(file_path_nodes, "r", encoding="UTF-8") as file_nodes:
             file_nodes.readline()
-            while line := file_nodes.readline():
+            for line in tqdm(file_nodes):
                 values = line.split()
                 node = int(values[0])
                 if graph.graph[node] is None:
                     continue
                 graph.graph[node].lat = float(values[1])
                 graph.graph[node].lon = float(values[2])
+        print("Enabling garbage collection")
+        gc.enable()
 
         return graph
 
     @staticmethod
-    def pre_process(graph: Graph, landmarks: list[int], dir: str) -> None:
+    def pre_process(graph: Graph, landmarks: list[int], directory: str) -> None:
         GraphFileHandler._pre_process_graph(
-            graph, landmarks, dir + "/preprocess.alt.to"
+            graph, landmarks, directory + "/preprocess.alt.to"
         )
 
         graph = graph.reverse()
         GraphFileHandler._pre_process_graph(
-            graph, landmarks, dir + "/preprocess.alt.from"
+            graph, landmarks, directory + "/preprocess.alt.from"
         )
 
     @staticmethod
@@ -64,8 +67,6 @@ class GraphFileHandler:
         graph: Graph, landmarks: list[int], directory: str
     ) -> None:
 
-        # landmark = 0
-        # GraphFileHandler.pre_process_graph(graph, [landmark], dir + f"/preprocess.alt.to.{landmark}")
         for index, landmark in enumerate(landmarks):
             threading.Thread(
                 target=GraphFileHandler._pre_process_graph_multithreaded,
@@ -84,8 +85,9 @@ class GraphFileHandler:
         for index, landmark in enumerate(landmarks):
             distances = graph.dijikstra_from_node(landmark)
             GraphFileHandler._write_pre_process(f"{file_name}.{index}", distances)
+
         del distances
-        collect()
+        gc.collect()
 
     @staticmethod
     def _pre_process_graph_multithreaded(
@@ -102,17 +104,20 @@ class GraphFileHandler:
                     distance = sys.maxsize
                 file.write(f"{distance}\n")
 
+
     @staticmethod
     def read_pre_process(file_path: str, landmarks: int) -> list[list[int]]:
+        gc.disable()
         data = []
         for i in range(landmarks):
             index = 0
             with open(file_path + "." + str(i), "r", encoding="UTF-8") as f:
-                while line := f.readline():
-                    value = int(line)
+                for line in tqdm(f):
                     if i == 0:
-                        data.append([value])
+                        data.append([int(line)])
                     else:
-                        data[index].append(value)
+                        data[index].append(int(line))
                     index += 1
+        gc.enable()
+        gc.collect()
         return data
