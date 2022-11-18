@@ -53,7 +53,7 @@ class Graph:
 
     def dijikstras(self, start: int, stop: int = None, silent: bool = False):
         distances = {}
-        distances[start] = ["start", 0]
+        distances[start] = [-1, 0]
         queue = PriorityQueue()
         queue.put((0, self.graph[start].value))
         visited = set()
@@ -72,7 +72,7 @@ class Graph:
             if index in visited:
                 continue
             if index == stop:
-                pred = self.get_predecessors(distances, start, stop)
+                pred = self.get_predecessors(distances, stop)
                 if not silent:
                     end = timer() - start_timer
                     print(f"done. ({end})")
@@ -96,7 +96,7 @@ class Graph:
 
     def d(self, node: int, typ: int , silent: bool = False):
         distances = [[0, float("inf")][:] for _ in range(self.nodes)]
-        distances[node] = ["start", 0]
+        distances[node] = [-1, 0]
         queue = PriorityQueue()
         queue.put((0, self.graph[node].value))
         nodes = 0
@@ -119,7 +119,7 @@ class Graph:
             if current_node.type is not None and current_node.type & typ == typ:
                 if not silent:
                     print(f"processed {nodes} nodes")
-                yield self.get_predecessors(distances, node, index)
+                yield self.get_predecessors(distances, index)
 
             visited[index] = True
             distances[current_node.value][1] = distance
@@ -184,7 +184,7 @@ class Graph:
         queue = PriorityQueue()
         queue.put((estimated_end, self.graph[start].value))
         distances = {}
-        distances[start] = ["start", 0, estimated_end]
+        distances[start] = [-1, 0, estimated_end]
         visited = set()
         nodes = 0
 
@@ -201,7 +201,7 @@ class Graph:
             if index in visited:
                 continue
             if index == stop:
-                pred = self.get_predecessors(distances, start, stop)
+                pred = self.get_predecessors(distances, stop)
                 if not silent:
                     end = timer() - start_time
                     print(f"done. ({end})")
@@ -253,7 +253,7 @@ class Graph:
 
         return max_difference
 
-    def get_predecessors(self, distances, start, stop):
+    def get_predecessors(self, distances, stop):
         current = distances[stop]
         predecessors = []
 
@@ -263,7 +263,7 @@ class Graph:
         predecessor = current[0]
         temp = []
 
-        while predecessor != "start":
+        while predecessor != -1:
             temp.append(predecessor)
             predecessor = distances[predecessor][0]
 
