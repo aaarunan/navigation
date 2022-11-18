@@ -25,36 +25,27 @@ class GraphFileHandler:
     def graph_from_files(file_path_edges: str, file_path_nodes: str, file_path_interest) -> Graph:
         #Improve performace by disabling garbage collection
         #This is due to append being slow when appending objects
-        gc.disable()
         with open(file_path_nodes, "r", encoding="UTF-8") as file_nodes:
             args = file_nodes.readline()
             args = args.split()
-            graph = Graph(int(args[0]), None)
+            graph = Graph(int(args[0]))
+            for line in tqdm(file_nodes):
+                values = line.split()
+                node = int(values[0])
+                graph.graph[node].lat = float(values[1])
+                graph.graph[node].lon = float(values[2])
 
         with open(file_path_edges, "r", encoding="UTF-8") as file_edges:
             file_edges.readline()
             for line in tqdm(file_edges):
                 values = line.split()
-                graph.add(int(values[0]), int(values[1]), int(values[2]), None, None)
-
-        with open(file_path_nodes, "r", encoding="UTF-8") as file_nodes:
-            file_nodes.readline()
-            for line in tqdm(file_nodes):
-                values = line.split()
-                node = int(values[0])
-                if graph.graph[node] is None:
-                    continue
-                graph.graph[node].lat = float(values[1])
-                graph.graph[node].lon = float(values[2])
-
+                graph.add_connection(int(values[0]), int(values[1]), int(values[2]))
 
         with open(file_path_interest, "r", encoding="UTF-8") as file_interest:
             file_interest.readline()
             for line in tqdm(file_interest):
                 values = line.split()
                 node = int(values[0])
-                if graph.graph[node] is None:
-                    continue
                 graph.graph[node].type = int(values[1])
 
         print("Enabling garbage collection")
