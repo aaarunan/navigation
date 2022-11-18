@@ -22,7 +22,7 @@ class GraphFileHandler:
                 file.write(f"{predecessor.value},{predecessor.lon},{predecessor.lat}\n")
 
     @staticmethod
-    def graph_from_files(file_path_edges: str, file_path_nodes: str) -> Graph:
+    def graph_from_files(file_path_edges: str, file_path_nodes: str, file_path_interest) -> Graph:
         #Improve performace by disabling garbage collection
         #This is due to append being slow when appending objects
         gc.disable()
@@ -46,6 +46,17 @@ class GraphFileHandler:
                     continue
                 graph.graph[node].lat = float(values[1])
                 graph.graph[node].lon = float(values[2])
+
+
+        with open(file_path_interest, "r", encoding="UTF-8") as file_interest:
+            file_interest.readline()
+            for line in tqdm(file_interest):
+                values = line.split()
+                node = int(values[0])
+                if graph.graph[node] is None:
+                    continue
+                graph.graph[node].type = int(values[1])
+
         print("Enabling garbage collection")
         gc.enable()
 

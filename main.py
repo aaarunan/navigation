@@ -81,7 +81,7 @@ def init_island():
 
     print("Loading graph")
     GRAPH = GraphFileHandler.graph_from_files(
-        "files/island/data/kanter.txt", "files/island/data/noder.txt"
+        "files/island/data/kanter.txt", "files/island/data/noder.txt", "files/island/data/interessepkt.txt"
     )
 
     print("Loading preprocess files")
@@ -159,6 +159,10 @@ def main():
             main()
     main_patfinding()
 
+
+    print("exiting...")
+
+def test():
     ##### europa #####
 
     #preprocess_europe_multithreaded()
@@ -172,11 +176,19 @@ def main():
     # preprocess_island_multithreaded()
     #preprocess_island()
 
-    #init_island()
-    #find_path_alt_island()
+    init_island()
+    #for node in GRAPH.graph:
+        #if node is not None and node.type is not None:
+            #print(node)
 
-    print("exiting...")
+    gen = GRAPH.d(96150, 4)
+    next(gen)
+    next(gen)
+    next(gen)
+    
+    #find_path_alt_island()
+    return
 
 
 if __name__ == "__main__":
-    main()
+    test()

@@ -17,7 +17,7 @@ class Node:
     edges: list[Edge]
     lon: float = None
     lat: float = None
-    estimated: int = None
+    type: int = None
 
     def append_edge(self, end: int, weight: int) -> None:
         self.edges.append(Edge(self.value, end, weight))
@@ -35,12 +35,12 @@ class Graph:
         self.graph = [None] * self.nodes
 
     def add(
-        self, start: int, end: int, weight: int, lon: float = None, lat: float = None
+        self, start: int, end: int, weight: int, lon: float = None, lat: float = None, type:int = None
     ) -> None:
         if self.graph[start] is not None:
             self.graph[start].append_edge(end, weight)
             return
-        self.graph[start] = Node(start, [Edge(start, end, weight)], lon, lat)
+        self.graph[start] = Node(start, [Edge(start, end, weight)], lon, lat, type)
 
     def reverse(self):
         reverse = Graph(self.nodes, [])
@@ -48,7 +48,7 @@ class Graph:
             if node is None:
                 continue
             for edge in node.edges:
-                reverse.add(edge.end, edge.start, edge.weight, None, None)
+                reverse.add(edge.end, edge.start, edge.weight)
         return reverse
 
     def dijikstras(self, start: int, stop: int = None, silent: bool = False):
@@ -92,6 +92,46 @@ class Graph:
                 if new_weight < distances[edge.end][1]:
                     queue.put((new_weight, edge.end))
                     distances[edge.end] = [edge.start, new_weight]
+        return False
+
+    def d(self, node: int, typ: int , silent: bool = False):
+        distances = [[0, float("inf")][:] for _ in range(self.nodes)]
+        distances[node] = ["start", 0]
+        queue = PriorityQueue()
+        queue.put((0, self.graph[node].value))
+        nodes = 0
+        visited = [False] * self.nodes
+
+        if not silent:
+            pbar = tqdm(total=self.nodes)
+            print("Finding path with dijikstra...")
+        while not queue.empty():
+            nodes += 1
+            distance, index = queue.get()
+            current_node = self.graph[index]
+
+            if not silent:
+                pbar.update(1)
+            if current_node is None:
+                continue
+            if visited[index]:
+                continue
+            if current_node.type is not None and current_node.type & typ == typ:
+                if not silent:
+                    print(f"processed {nodes} nodes")
+                yield self.get_predecessors(distances, node, index)
+
+            visited[index] = True
+            distances[current_node.value][1] = distance
+
+            for edge in current_node.edges:
+                if visited[edge.end]:
+                    continue
+                new_weight = distance + edge.weight
+                if new_weight < distances[edge.end][1]:
+                    queue.put((new_weight, edge.end))
+                    distances[edge.end] = [index, new_weight]
+
         return False
 
     def dijikstra_from_node(self, node: int, silent: bool = False) -> list[list[int]]:
