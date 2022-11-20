@@ -29,29 +29,21 @@ class Graph:
     graph: list[Node]
     estimated: int = None
 
-    def __init__(self, nodes: int, edges: list[Edge]) -> None:
+    def __init__(self, nodes: int) -> None:
         self.nodes = nodes
-        self.edges = edges
-        self.graph = [None] * self.nodes
+        self.graph = [Node(i, []) for i in range(nodes)]
 
-    def add(
-        self, start: int, end: int, weight: int, lon: float = None, lat: float = None, type:int = None
-    ) -> None:
-        if self.graph[start] is not None:
-            self.graph[start].append_edge(end, weight)
-            return
-        self.graph[start] = Node(start, [Edge(start, end, weight)], lon, lat, type)
+    def add_connection(self, start: int, end: int, weight: int) -> None:
+        self.graph[start].append_edge(end, weight)
 
     def reverse(self):
-        reverse = Graph(self.nodes, [])
+        reverse = Graph(self.nodes)
         for node in self.graph:
-            if node is None:
-                continue
             for edge in node.edges:
-                reverse.add(edge.end, edge.start, edge.weight)
+                reverse.add_connection(edge.end, edge.start, edge.weight)
         return reverse
 
-    def dijikstras(self, start: int, stop: int = None, silent: bool = False):
+    def dijikstras(self, start: int, stop: int):
         distances = {}
         distances[start] = [-1, 0]
         queue = PriorityQueue()
@@ -59,27 +51,61 @@ class Graph:
         visited = set()
         nodes = 0
 
+        start_timer = timer()
+        while not queue.empty():
+            nodes += 1
+            distance, index = queue.get()
+
+            if index in visited:
+                continue
+            if index == stop:
+                time = timer() - start_timer
+                return (
+                    self.predecessors(distances, stop),
+                    time,
+                    nodes,
+                    distances[stop][1],
+                )
+            current_node = self.graph[index]
+            visited.add(index)
+            distances[index][1] = distance
+
+            for edge in current_node.edges:
+                if edge.end in visited:
+                    continue
+                if edge.end not in distances:
+                    distances[edge.end] = [None, float("inf")]
+                new_weight = distance + edge.weight
+                if new_weight < distances[edge.end][1]:
+                    queue.put((new_weight, edge.end))
+                    distances[edge.end] = [index , new_weight]
+        return False
+
+    def dijikstra_all(
+        self, start: int, typ: int, silent: bool = False
+    ) -> tuple[list[list[int]], PriorityQueue]:
+        distances = {}
+        distances[start] = [-1, 0]
+        queue = PriorityQueue()
+        queue.put((0, self.graph[start].value))
+        visited = set()
+        targets = PriorityQueue()
+        nodes = 0
+
         if not silent:
+            pbar = tqdm(total=self.nodes)
             print("Finding path with dijikstra...")
-            start_timer = timer()
         while not queue.empty():
             nodes += 1
             distance, index = queue.get()
             current_node = self.graph[index]
+            if not silent:
+                pbar.update(1)
 
-            if current_node is None:
-                continue
             if index in visited:
                 continue
-            if index == stop:
-                pred = self.get_predecessors(distances, stop)
-                if not silent:
-                    end = timer() - start_timer
-                    print(f"done. ({end})")
-                    print(f"processed {nodes} nodes")
-                    print(f"distance       {distances[stop][1]/100/60/60} timer")
-                    print(f"Nodes in path: {len(pred[0])}")
-                return pred
+            if current_node.type is not None and current_node.type & typ == typ:
+                targets.put((distance, index))
             visited.add(index)
             distances[current_node.value][1] = distance
 
@@ -91,48 +117,8 @@ class Graph:
                 new_weight = distance + edge.weight
                 if new_weight < distances[edge.end][1]:
                     queue.put((new_weight, edge.end))
-                    distances[edge.end] = [edge.start, new_weight]
-        return False
-
-    def d(self, node: int, typ: int , silent: bool = False):
-        distances = [[0, float("inf")][:] for _ in range(self.nodes)]
-        distances[node] = [-1, 0]
-        queue = PriorityQueue()
-        queue.put((0, self.graph[node].value))
-        nodes = 0
-        visited = [False] * self.nodes
-
-        if not silent:
-            pbar = tqdm(total=self.nodes)
-            print("Finding path with dijikstra...")
-        while not queue.empty():
-            nodes += 1
-            distance, index = queue.get()
-            current_node = self.graph[index]
-
-            if not silent:
-                pbar.update(1)
-            if current_node is None:
-                continue
-            if visited[index]:
-                continue
-            if current_node.type is not None and current_node.type & typ == typ:
-                if not silent:
-                    print(f"processed {nodes} nodes")
-                yield self.get_predecessors(distances, index)
-
-            visited[index] = True
-            distances[current_node.value][1] = distance
-
-            for edge in current_node.edges:
-                if visited[edge.end]:
-                    continue
-                new_weight = distance + edge.weight
-                if new_weight < distances[edge.end][1]:
-                    queue.put((new_weight, edge.end))
                     distances[edge.end] = [index, new_weight]
-
-        return False
+        return distances, targets
 
     def dijikstra_from_node(self, node: int, silent: bool = False) -> list[list[int]]:
         distances = [float("inf")] * self.nodes
@@ -152,8 +138,6 @@ class Graph:
 
             if not silent:
                 pbar.update(1)
-            if current_node is None:
-                continue
             if visited[index]:
                 continue
 
@@ -174,13 +158,10 @@ class Graph:
         self,
         start: int,
         stop: int,
-        preprocess_from: list[list[int]],
-        preprocess_to: list[list[int]],
-        silent: bool = False,
+        p_from: list[list[int]],
+        p_to: list[list[int]],
     ):
-        estimated_end = self.estimate_distance(
-            preprocess_from, preprocess_to, start, stop
-        )
+        estimated_end = self.estimeate_end(p_from, p_to, start, stop)
         queue = PriorityQueue()
         queue.put((estimated_end, self.graph[start].value))
         distances = {}
@@ -188,52 +169,45 @@ class Graph:
         visited = set()
         nodes = 0
 
-        if not silent:
-            print("Finding path with alt...")
-            start_time = timer()
+        start_time = timer()
         while not queue.empty():
-            _, index = queue.get()
-            current_node = self.graph[index]
             nodes += 1
+            _, index = queue.get()
 
-            if current_node is None:
-                continue
             if index in visited:
                 continue
             if index == stop:
-                pred = self.get_predecessors(distances, stop)
-                if not silent:
-                    end = timer() - start_time
-                    print(f"done. ({end})")
-                    print(f"processed      {nodes} nodes")
-                    print(f"distance       {distances[stop][1]/100/60/60} timer")
-                    print(f"Nodes in path: {len(pred[0])}")
-                return pred
+                time = timer() - start_time
+                return (
+                    self.predecessors(distances, stop),
+                    time,
+                    nodes,
+                    distances[stop][1],
+                )
+            current_node = self.graph[index]
 
             visited.add(index)
 
             for edge in current_node.edges:
                 if edge.end in visited:
                     continue
-                new_weight = distances[current_node.value][1] + edge.weight
+                new_weight = distances[index][1] + edge.weight
                 if edge.end not in distances:
                     distances[edge.end] = [None, float("inf"), None]
                 if new_weight < distances[edge.end][1]:
                     estimated_end = distances[edge.end][2]
                     if estimated_end is None:
-                        estimated_end = self.estimate_distance(
-                            preprocess_from, preprocess_to, edge.end, stop
-                        )
+                        estimated_end = self.estimeate_end(p_from, p_to, edge.end, stop)
                     queue.put((new_weight + estimated_end, edge.end))
                     distances[edge.end] = [
-                        edge.start,
+                        index,
                         new_weight,
                         estimated_end,
                     ]
 
         return False
 
-    def estimate_distance(
+    def estimeate_end(
         self,
         to_nodes: list[list[int]],
         to_landmarks: list[list[int]],
@@ -253,7 +227,7 @@ class Graph:
 
         return max_difference
 
-    def get_predecessors(self, distances, stop):
+    def predecessors(self, distances, stop):
         current = distances[stop]
         predecessors = []
 
@@ -263,6 +237,7 @@ class Graph:
         predecessor = current[0]
         temp = []
 
+        # kan fjernes
         while predecessor != -1:
             temp.append(predecessor)
             predecessor = distances[predecessor][0]
