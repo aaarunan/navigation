@@ -6,9 +6,19 @@ import Graph
 GRAPH: Graph = None
 PREPROCESS_TO: list = None
 PREPROCESS_FROM: list = None
-RECOURCES_DIR: str= "files"
-EUROPE_LANDMARKS: int= 3
-ISLAND_LANDMARKS: int = 3
+
+RECOURCES_DIR: str = "files"
+
+EUROPA_LANDMARKS = [4248761, 6600989, 238502]
+# euorpa_landmarks = [894067, 4248761, 2405345]
+NODES_ISLAND = [[0, 10000]]
+NODES_EUROPA = [[3292784, 7352330], [232073, 2518780], [7425499, 3430400]]
+INTEREST_EUROPA = [
+    [7172108, "vaernes2", 4],
+    [4546048, "trondheim_torg", 16],
+    [3509663, "hemsedal", 8],
+]
+INTEREST_ISLAND = [[10000, "island-test", 4]]
 
 
 def print_result(predecessors: list[int], time: float, nodes: int, length: int) -> None:
@@ -40,11 +50,7 @@ def preprocess(
     read_graph(code)
     gc.enable()
     directory = RECOURCES_DIR + "/" + code + "/preprocess"
-    GraphFileHandler.pre_process(
-        GRAPH,
-        landmarks,
-        directory
-    )
+    GraphFileHandler.pre_process(GRAPH, landmarks, directory)
 
 
 def read_graph(code: str) -> None:
@@ -58,11 +64,12 @@ def read_graph(code: str) -> None:
     )
 
 
-def closest_interest(node: int, place: str, code: int) -> None:
-    _, targets = GRAPH.dijikstra_all(node, code)
+def closest_interest(node: int, place: str, typ: int) -> None:
+    gen = GRAPH.dijikstras(node, typ=typ)
     result = []
     for _ in range(8):
-        result.append(GRAPH.graph[targets.get()[1]])
+        result.append(next(gen))
+
     GraphFileHandler.make_csv(result, place)
 
 
@@ -95,7 +102,8 @@ def pathfinding():
         data = GRAPH.alt(start, stop, PREPROCESS_FROM, PREPROCESS_TO)
         print_result(*data)
 
-        data = GRAPH.dijikstras(0, 100)
+        data = next(GRAPH.dijikstras(start, stop=stop))
+        print_result(*data)
 
         print("Writing result to file...")
         GraphFileHandler.make_csv(data[0][0], "out")
@@ -131,21 +139,8 @@ def main():
     pathfinding()
 
 
-def test_island():
-    init("island")
-    from_node = 0
-    to_node = 1000
-    data_alt = GRAPH.alt(from_node, to_node, PREPROCESS_FROM, PREPROCESS_TO)
-    print_result(*data_alt)
-    data_dijikstra = GRAPH.dijikstras(from_node, stop=to_node)
-    print_result(*data_dijikstra)
-
-    print("Writing result to file...")
-    GraphFileHandler.make_csv(data_alt[0][0], "test_island")
-
-def test_all_island():
-    init("island")
-    nodes = [[0, 10000]]
+def test_all(code: str, nodes: list):
+    init(code)
     for pair in nodes:
         from_node = pair[0]
         to_node = pair[1]
@@ -155,56 +150,37 @@ def test_all_island():
             data_alt = GRAPH.alt(from_node, to_node, PREPROCESS_FROM, PREPROCESS_TO)
             print("ALT")
             print_result(*data_alt)
-            data_dijikstra = GRAPH.dijikstras(from_node, to_node)
+            data_dijikstra = next(GRAPH.dijikstras(from_node, typ=to_node))
 
             print("DIJIKSTRA")
             print_result(*data_dijikstra)
             from_node, to_node = to_node, from_node
-            del data_alt
-            del data_dijikstra
-    #GraphFileHandler.make_csv(data_dijikstra[0][0], "test_all")
-
-def test_all():
-    init("europa")
-    nodes = [[3292784, 7352330], [232073, 2518780], [7425499, 3430400]]
-    for pair in nodes:
-        from_node = pair[0]
-        to_node = pair[1]
-        for _ in range(2):
-            print()
-            print(f"From: {from_node} to: {to_node}")
-            data_alt = GRAPH.alt(from_node, to_node, PREPROCESS_FROM, PREPROCESS_TO)
-            print("ALT")
-            print_result(*data_alt)
-            data_dijikstra = GRAPH.dijikstras(from_node, to_node)
-
-            print("DIJIKSTRA")
-            print_result(*data_dijikstra)
-            from_node, to_node = to_node, from_node
-            del data_alt
-            del data_dijikstra
     GraphFileHandler.make_csv(data_dijikstra[0][0], "test_all")
+    del data_alt, data_dijikstra
 
 
-def closest_all():
-    # 1 Stedsnavn Trondheim, Moholt, …
-    # 2 Bensinstasjon Shell Herlev
-    # 4 Ladestasjon Ionity Klett
-    # 8 Spisested Restauranter, kafeer, puber
-    # 16 Drikkested Barer, puber, nattklubber
-    # 32 Overnattingssted Hoteller, moteller, gjestehus
-    init("europa")
-    closest_interest(7172108, "vaernes", 4)
-    closest_interest(4546048, "trondheim_torg", 16)
-    closest_interest(3509663, "hemsedal", 8)
+# 1 Stedsnavn Trondheim, Moholt, …
+# 2 Bensinstasjon Shell Herlev
+# 4 Ladestasjon Ionity Klett
+# 8 Spisested Restauranter, kafeer, puber
+# 16 Drikkested Barer, puber, nattklubber
+# 32 Overnattingssted Hoteller, moteller, gjestehus
 
 
-europa_nodes = [4248761, 6600989, 238502]
+def closest_all(code: str, interests: list):
+    init(code)
+    for interest in interests:
+        closest_interest(*interest)
+
+
 if __name__ == "__main__":
-    #test_all()
-    #closest_all()
     # main()
-    #test_island()
-    test_all_island() 
-    #preprocess("europa", europa_nodes)
+
+    # test_all("europa", NODES_EUROPA)
+    closest_all("europa", INTEREST_EUROPA)
+
+    # test_all("island", NODES_ISLAND)
+    closest_all("island", INTEREST_ISLAND)
+
+    # preprocess("europa", europa_landmarks)
     print("exiting...")

@@ -13,7 +13,7 @@ class Edge:
 
 @dataclass
 class Node:
-    value: int #Can maybe be removed to reduce memory usage
+    value: int  # Can maybe be removed to reduce memory usage
     edges: list[Edge]
     lon: float = None
     lat: float = None
@@ -43,7 +43,7 @@ class Graph:
                 reverse.add_connection(edge.end, edge.start, edge.weight)
         return reverse
 
-    def dijikstras(self, start: int, stop: int):
+    def dijikstras(self, start: int, stop: int = None, typ: int = None):
         distances = {}
         distances[start] = [-1, 0]
         queue = PriorityQueue()
@@ -66,8 +66,10 @@ class Graph:
                     nodes,
                     distances[stop][1],
                 )
-            current_node = self.graph[index]
             visited.add(index)
+            current_node = self.graph[index]
+            if current_node.type is not None and current_node.type & typ == typ:
+                yield current_node
             distances[index][1] = distance
 
             for edge in current_node.edges:
@@ -80,45 +82,6 @@ class Graph:
                     queue.put((new_weight, edge.end))
                     distances[edge.end] = [index, new_weight]
         return False
-
-    def dijikstra_all(
-        self, start: int, typ: int, silent: bool = False
-    ) -> tuple[list[list[int]], PriorityQueue]:
-        distances = {}
-        distances[start] = [-1, 0]
-        queue = PriorityQueue()
-        queue.put((0, self.graph[start].value))
-        visited = set()
-        targets = PriorityQueue()
-        nodes = 0
-
-        if not silent:
-            pbar = tqdm(total=self.nodes)
-            print("Finding path with dijikstra...")
-        while not queue.empty():
-            nodes += 1
-            distance, index = queue.get()
-            current_node = self.graph[index]
-            if not silent:
-                pbar.update(1)
-
-            if index in visited:
-                continue
-            if current_node.type is not None and current_node.type & typ == typ:
-                targets.put((distance, index))
-            visited.add(index)
-            distances[current_node.value][1] = distance
-
-            for edge in current_node.edges:
-                if edge.end in visited:
-                    continue
-                if edge.end not in distances:
-                    distances[edge.end] = [None, float("inf")]
-                new_weight = distance + edge.weight
-                if new_weight < distances[edge.end][1]:
-                    queue.put((new_weight, edge.end))
-                    distances[edge.end] = [index, new_weight]
-        return distances, targets
 
     def dijikstra_pre_process(self, node: int, silent: bool = False) -> list[list[int]]:
         distances = [float("inf")] * self.nodes
