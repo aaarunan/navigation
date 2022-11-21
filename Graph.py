@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from tqdm import tqdm
-from timeit import default_timer as timer
 from queue import PriorityQueue as PriorityQueue
+from timeit import default_timer as timer
 
 
 @dataclass
@@ -13,7 +13,7 @@ class Edge:
 
 @dataclass
 class Node:
-    value: int
+    value: int #Can maybe be removed to reduce memory usage
     edges: list[Edge]
     lon: float = None
     lat: float = None
@@ -78,7 +78,7 @@ class Graph:
                 new_weight = distance + edge.weight
                 if new_weight < distances[edge.end][1]:
                     queue.put((new_weight, edge.end))
-                    distances[edge.end] = [index , new_weight]
+                    distances[edge.end] = [index, new_weight]
         return False
 
     def dijikstra_all(
@@ -120,7 +120,7 @@ class Graph:
                     distances[edge.end] = [index, new_weight]
         return distances, targets
 
-    def dijikstra_from_node(self, node: int, silent: bool = False) -> list[list[int]]:
+    def dijikstra_pre_process(self, node: int, silent: bool = False) -> list[list[int]]:
         distances = [float("inf")] * self.nodes
         distances[node] = 0
         queue = PriorityQueue()
@@ -134,7 +134,6 @@ class Graph:
         while not queue.empty():
             nodes += 1
             distance, index = queue.get()
-            current_node = self.graph[index]
 
             if not silent:
                 pbar.update(1)
@@ -142,7 +141,8 @@ class Graph:
                 continue
 
             visited[index] = True
-            distances[current_node.value] = distance
+            distances[index] = distance
+            current_node = self.graph[index]
 
             for edge in current_node.edges:
                 if visited[edge.end]:

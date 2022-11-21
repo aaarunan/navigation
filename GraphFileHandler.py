@@ -21,18 +21,19 @@ class GraphFileHandler:
                 file.write(f"{predecessor.value},{predecessor.lon},{predecessor.lat}\n")
 
     @staticmethod
-    def graph_from_files(file_path_edges: str, file_path_nodes: str, file_path_interest, debug = False) -> Graph:
+    def graph_from_files(
+        file_path_edges: str, file_path_nodes: str, file_path_interest, debug=False
+    ) -> Graph:
         with open(file_path_nodes, "r", encoding="UTF-8") as file_nodes:
             args = file_nodes.readline()
             args = args.split()
             graph = Graph(int(args[0]))
             if debug:
                 print(f"Reading {file_path_edges}...")
-            for line in tqdm(file_nodes):
+            for index, line in tqdm(enumerate(file_nodes)):
                 values = line.split()
-                node = int(values[0])
-                graph.graph[node].lat = float(values[1])
-                graph.graph[node].lon = float(values[2])
+                graph.graph[index].lat = float(values[1])
+                graph.graph[index].lon = float(values[2])
 
         if debug:
             print(f"Reading {file_path_nodes}...")
@@ -50,9 +51,8 @@ class GraphFileHandler:
                 values = line.split()
                 graph.graph[int(values[0])].type = int(values[1])
 
-
         return graph
-    
+
     @staticmethod
     def pre_process(graph: Graph, landmarks: list[int], directory: str) -> None:
         GraphFileHandler._pre_process_graph(
@@ -83,9 +83,9 @@ class GraphFileHandler:
             ).start()
 
     @staticmethod
-    def _pre_process_graph(graph: Graph, landmarks: list[int], file_name: str):
+    def _pre_process_graph(graph: Graph, landmarks: list[int], file_name: str) -> None:
         for index, landmark in enumerate(landmarks):
-            distances = graph.dijikstra_from_node(landmark)
+            distances = graph.dijikstra_pre_process(landmark)
             GraphFileHandler._write_pre_process(f"{file_name}.{index}", distances)
 
         del distances
@@ -93,8 +93,8 @@ class GraphFileHandler:
     @staticmethod
     def _pre_process_graph_multithreaded(
         graph: Graph, index: int, landmark: int, file_name: str
-    ):
-        distances = graph.dijikstra_from_node(landmark)
+    ) -> None:
+        distances = graph.dijikstra_pre_process(landmark)
         GraphFileHandler._write_pre_process(f"{file_name}.{index}", distances)
 
     @staticmethod
@@ -105,15 +105,16 @@ class GraphFileHandler:
                     distance = sys.maxsize
                 file.write(f"{distance}\n")
 
-
     @staticmethod
-    def read_pre_process(file_path: str, landmarks: int, nodes: int, debug:bool = False) -> list[list[int]]:
-        data = [[None]* landmarks for _ in range(nodes)]
+    def read_pre_process(
+        file_path: str, landmarks: int, nodes: int, debug: bool = False
+    ) -> list[list[int]]:
+        data = [[None] * landmarks for _ in range(nodes)]
         for i in range(landmarks):
             full_path = file_path + "." + str(i)
             if debug:
                 print(f"Reading {full_path}...")
-            with open(full_path, "r", encoding="UTF-8") as f:
-                for index, line in tqdm(enumerate(f)):
-                    data[index][i] = (int(line))
+            with open(full_path, "r", encoding="UTF-8") as file:
+                for index, line in tqdm(enumerate(file)):
+                    data[index][i] = int(line)
         return data
