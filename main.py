@@ -14,7 +14,7 @@ EUROPA_LANDMARKS = [4248761, 6600989, 238502]
 NODES_ISLAND = [[0, 10000]]
 NODES_EUROPA = [[3292784, 7352330], [232073, 2518780], [7425499, 3430400]]
 INTEREST_EUROPA = [
-    [7172108, "vaernes2", 4],
+    [7172108, "vaernes", 4],
     [4546048, "trondheim_torg", 16],
     [3509663, "hemsedal", 8],
 ]
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     closest_all("europa", INTEREST_EUROPA)
 
     # test_all("island", NODES_ISLAND)
-    closest_all("island", INTEREST_ISLAND)
+    # closest_all("island", INTEREST_ISLAND)
 
     # preprocess("europa", europa_landmarks)
     print("exiting...")
