@@ -30,7 +30,10 @@ class GraphFileHandler:
             graph = Graph(int(args[0]))
             if debug:
                 print(f"Reading {file_path_edges}...")
-            for index, line in tqdm(enumerate(file_nodes)):
+                gen = tqdm(enumerate(file_nodes))
+            else:
+                gen = enumerate(file_nodes)
+            for index, line in gen:
                 values = line.split()
                 graph.graph[index].lat = float(values[1])
                 graph.graph[index].lon = float(values[2])
@@ -39,7 +42,11 @@ class GraphFileHandler:
             print(f"Reading {file_path_nodes}...")
         with open(file_path_edges, "r", encoding="UTF-8") as file_edges:
             file_edges.readline()
-            for line in tqdm(file_edges):
+            if debug:
+                gen = tqdm(file_edges)
+            else:
+                gen = file_edges
+            for line in gen:
                 values = line.split()
                 graph.add_connection(int(values[0]), int(values[1]), int(values[2]))
 
@@ -47,21 +54,25 @@ class GraphFileHandler:
             print(f"Reading {file_path_interest}...")
         with open(file_path_interest, "r", encoding="UTF-8") as file_interest:
             file_interest.readline()
-            for line in tqdm(file_interest):
+            if debug:
+                gen = tqdm(file_interest)
+            else:
+                gen = file_interest
+            for line in gen:
                 values = line.split()
                 graph.graph[int(values[0])].type = int(values[1])
 
         return graph
 
     @staticmethod
-    def pre_process(graph: Graph, landmarks: list[int], directory: str) -> None:
+    def pre_process(graph: Graph, landmarks: list[int], directory: str, debug=True) -> None:
         GraphFileHandler._pre_process_graph(
-            graph, landmarks, directory + "/preprocess.alt.to"
+            graph, landmarks, directory + "/preprocess.alt.to", silent = not debug
         )
 
         graph = graph.reverse()
         GraphFileHandler._pre_process_graph(
-            graph, landmarks, directory + "/preprocess.alt.from"
+            graph, landmarks, directory + "/preprocess.alt.from", silent= not debug
         )
 
     @staticmethod
@@ -83,9 +94,9 @@ class GraphFileHandler:
             ).start()
 
     @staticmethod
-    def _pre_process_graph(graph: Graph, landmarks: list[int], file_name: str) -> None:
+    def _pre_process_graph(graph: Graph, landmarks: list[int], file_name: str, silent) -> None:
         for index, landmark in enumerate(landmarks):
-            distances = graph.dijikstra_pre_process(landmark)
+            distances = graph.dijikstra_pre_process(landmark, silent=silent)
             GraphFileHandler._write_pre_process(f"{file_name}.{index}", distances)
 
         del distances
@@ -115,6 +126,10 @@ class GraphFileHandler:
             if debug:
                 print(f"Reading {full_path}...")
             with open(full_path, "r", encoding="UTF-8") as file:
-                for index, line in tqdm(enumerate(file)):
+                if debug:
+                    gen = tqdm(enumerate(file))
+                else:
+                    gen = enumerate(file)
+                for index, line in gen:
                     data[index][i] = int(line)
         return data

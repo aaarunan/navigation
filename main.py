@@ -12,13 +12,14 @@ DEBUG = True
 
 EUROPA_LANDMARKS = [4248761, 6600989, 238502]
 # euorpa_landmarks = [894067, 4248761, 2405345]
-NODES_ISLAND = [[0, 10000]]
 NODES_EUROPA = [[3292784, 7352330], [232073, 2518780], [7425499, 3430400]]
 INTEREST_EUROPA = [
     [7172108, "vaernes", 4],
     [4546048, "trondheim_torg", 16],
     [3509663, "hemsedal", 8],
 ]
+ISLAND_LANDMARKS = [0, 10000, 20000]
+NODES_ISLAND = [[0, 10000]]
 INTEREST_ISLAND = [[10000, "island-test", 4]]
 
 
@@ -51,7 +52,7 @@ def preprocess(
     read_graph(code)
     gc.enable()
     directory = RECOURCES_DIR + "/" + code + "/preprocess"
-    GraphFileHandler.pre_process(GRAPH, landmarks, directory)
+    GraphFileHandler.pre_process(GRAPH, landmarks, directory, debug=DEBUG)
 
 
 def read_graph(code: str) -> None:
@@ -178,10 +179,11 @@ if __name__ == "__main__":
     # main()
 
     #test_all("europa", NODES_EUROPA)
-    closest_all("europa", INTEREST_EUROPA)
+    #closest_all("europa", INTEREST_EUROPA)
+    #preprocess("europa", EUROPA_LANDMARKS)
 
     #test_all("island", NODES_ISLAND)
     #closest_all("island", INTEREST_ISLAND)
+    preprocess("island", ISLAND_LANDMARKS)
 
-    #preprocess("europa", EUROPA_LANDMARKS)
     print("exiting...")
