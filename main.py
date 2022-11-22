@@ -8,6 +8,7 @@ PREPROCESS_TO: list = None
 PREPROCESS_FROM: list = None
 
 RECOURCES_DIR: str = "files"
+DEBUG = True
 
 EUROPA_LANDMARKS = [4248761, 6600989, 238502]
 # euorpa_landmarks = [894067, 4248761, 2405345]
@@ -35,10 +36,10 @@ def read_preprocess(code: str, landmarks: int) -> None:
     global PREPROCESS_FROM
     global PREPROCESS_TO
     PREPROCESS_FROM = GraphFileHandler.read_pre_process(
-        directory + "/preprocess.alt.to", landmarks, GRAPH.nodes, debug=True
+        directory + "/preprocess.alt.to", landmarks, GRAPH.nodes, debug=DEBUG
     )
     PREPROCESS_TO = GraphFileHandler.read_pre_process(
-        directory + "/preprocess.alt.from", landmarks, GRAPH.nodes, debug=True
+        directory + "/preprocess.alt.from", landmarks, GRAPH.nodes, debug=DEBUG
     )
 
 
@@ -60,7 +61,7 @@ def read_graph(code: str) -> None:
         directory + "kanter.txt",
         directory + "noder.txt",
         directory + "interessepkt.txt",
-        debug=True,
+        debug=DEBUG,
     )
 
 
@@ -177,9 +178,9 @@ if __name__ == "__main__":
     # main()
 
     #test_all("europa", NODES_EUROPA)
-    #closest_all("europa", INTEREST_EUROPA)
+    closest_all("europa", INTEREST_EUROPA)
 
-    test_all("island", NODES_ISLAND)
+    #test_all("island", NODES_ISLAND)
     #closest_all("island", INTEREST_ISLAND)
 
     #preprocess("europa", EUROPA_LANDMARKS)
