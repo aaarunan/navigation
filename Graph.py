@@ -60,7 +60,7 @@ class Graph:
                 continue
             if index == stop:
                 time = timer() - start_timer
-                return (
+                yield (
                     self.predecessors(distances, stop),
                     time,
                     nodes,
@@ -68,7 +68,7 @@ class Graph:
                 )
             visited.add(index)
             current_node = self.graph[index]
-            if current_node.type is not None and current_node.type & typ == typ:
+            if typ is not None and current_node.type is not None and current_node.type & typ == typ:
                 yield current_node
             distances[index][1] = distance
 

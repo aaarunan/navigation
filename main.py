@@ -150,7 +150,7 @@ def test_all(code: str, nodes: list):
             data_alt = GRAPH.alt(from_node, to_node, PREPROCESS_FROM, PREPROCESS_TO)
             print("ALT")
             print_result(*data_alt)
-            data_dijikstra = next(GRAPH.dijikstras(from_node, typ=to_node))
+            data_dijikstra = next(GRAPH.dijikstras(from_node, stop=to_node))
 
             print("DIJIKSTRA")
             print_result(*data_dijikstra)
@@ -176,11 +176,11 @@ def closest_all(code: str, interests: list):
 if __name__ == "__main__":
     # main()
 
-    # test_all("europa", NODES_EUROPA)
-    closest_all("europa", INTEREST_EUROPA)
+    #test_all("europa", NODES_EUROPA)
+    #closest_all("europa", INTEREST_EUROPA)
 
-    # test_all("island", NODES_ISLAND)
-    # closest_all("island", INTEREST_ISLAND)
+    test_all("island", NODES_ISLAND)
+    #closest_all("island", INTEREST_ISLAND)
 
-    # preprocess("europa", europa_landmarks)
+    #preprocess("europa", EUROPA_LANDMARKS)
     print("exiting...")
