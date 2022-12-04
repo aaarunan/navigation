@@ -6,21 +6,20 @@ from timeit import default_timer as timer
 
 @dataclass
 class Edge:
-    start: int
+    __slots__ = "end", "weight"
     end: int
     weight: int
 
 
 @dataclass
 class Node:
-    value: int  # Can maybe be removed to reduce memory usage
-    edges: list[Edge]
+    edges: list[int] 
     lon: float = None
     lat: float = None
     type: int = None
 
     def append_edge(self, end: int, weight: int) -> None:
-        self.edges.append(Edge(self.value, end, weight))
+        self.edges.append(Edge(end, weight))
 
 
 class Graph:
@@ -31,7 +30,7 @@ class Graph:
 
     def __init__(self, nodes: int) -> None:
         self.nodes = nodes
-        self.graph = [Node(i, []) for i in range(nodes)]
+        self.graph = [Node([]) for _ in range(nodes)]
 
     def add_connection(self, start: int, end: int, weight: int) -> None:
         self.graph[start].append_edge(end, weight)
@@ -47,7 +46,7 @@ class Graph:
         distances = {}
         distances[start] = [-1, 0]
         queue = PriorityQueue()
-        queue.put((0, self.graph[start].value))
+        queue.put((0, start))
         visited = set()
         nodes = 0
 
@@ -68,7 +67,11 @@ class Graph:
                 )
             visited.add(index)
             current_node = self.graph[index]
-            if typ is not None and current_node.type is not None and current_node.type & typ == typ:
+            if (
+                typ is not None
+                and current_node.type is not None
+                and current_node.type & typ == typ
+            ):
                 yield current_node
             distances[index][1] = distance
 
@@ -87,7 +90,7 @@ class Graph:
         distances = [float("inf")] * self.nodes
         distances[node] = 0
         queue = PriorityQueue()
-        queue.put((0, self.graph[node].value))
+        queue.put((0, node))
         nodes = 0
         visited = [False] * self.nodes
 
@@ -126,7 +129,7 @@ class Graph:
     ):
         estimated_end = self.estimeate_end(p_from, p_to, start, stop)
         queue = PriorityQueue()
-        queue.put((estimated_end, self.graph[start].value))
+        queue.put((estimated_end, start))
         distances = {}
         distances[start] = [-1, 0, estimated_end]
         visited = set()

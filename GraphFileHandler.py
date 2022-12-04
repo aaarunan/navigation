@@ -6,19 +6,13 @@ import threading
 from tqdm import tqdm
 
 
-@dataclass
-class LandMark:
-    lon: float
-    lat: float
-
-
 class GraphFileHandler:
     @staticmethod
     def make_csv(predecessors: list[Node], file_name: str) -> None:
         with open(file_name + ".csv", "w", encoding="UTF-8") as file:
             file.write("value,lon,lat\n")
             for predecessor in predecessors:
-                file.write(f"{predecessor.value},{predecessor.lon},{predecessor.lat}\n")
+                file.write(f"{predecessor.lon},{predecessor.lat}\n")
 
     @staticmethod
     def graph_from_files(
